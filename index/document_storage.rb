@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'json'
+require_relative './document_storage_iterator'
 
 module Index
   # DocumentStorage is responsible for storing documents
@@ -9,9 +10,17 @@ module Index
   # - documents_index - stores the offset of the documents in the documents file. It stores pairs
   # of document_id and offset
   class DocumentStorage
+    def self.documents_file(data_path:)
+      "#{data_path}/documents"
+    end
+
+    def self.documents_index_file(data_path:)
+      "#{data_path}/documents_index"
+    end
+
     def initialize(data_path:)
-      @path = "#{data_path}/documents"
-      @index_path = "#{data_path}/documents_index"
+      @path = DocumentStorage.documents_file(data_path:)
+      @index_path = DocumentStorage.documents_index_file(data_path:)
       @offset = 0
 
       open_file_handler
@@ -29,6 +38,7 @@ module Index
 
       # Store the offset of the document in the index file
       @index_file_handler << [document_id, @offset].pack('Q>*')
+      @index_file_handler.flush
 
       @offset += payload.length + 8
     end
@@ -42,6 +52,20 @@ module Index
       payload = @file_handler.read(payload_length)
 
       JSON.parse(payload)
+    end
+
+    def total_documents
+      File.size(@index_path) / 16
+    end
+
+    def into_iterator
+      Index::DocumentStorageIterator.new(self)
+    end
+
+    def get_document_by_index(index)
+      @index_file_handler.seek(index * 16)
+
+      @index_file_handler.read(16).unpack('Q>Q>')
     end
 
     private
@@ -66,17 +90,13 @@ module Index
       @index_file_handler = io
     end
 
-    def total_documents
-      @total_documents ||= File.size(@index_path) / 16
-    end
-
     def binary_search(document_id)
       lo = 0
       hi = total_documents - 1
 
       while lo <= hi
         mid = lo + (hi - lo) / 2
-        mid_value, mid_offset = get_by_index(mid)
+        mid_value, mid_offset = get_document_by_index(mid)
 
         if mid_value == document_id
           return mid, mid_offset
@@ -86,12 +106,6 @@ module Index
           hi = mid - 1
         end
       end
-    end
-
-    def get_by_index(index)
-      @index_file_handler.seek(index * 16)
-
-      @index_file_handler.read(16).unpack('Q>Q>')
     end
   end
 end
