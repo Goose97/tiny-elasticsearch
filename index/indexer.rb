@@ -34,7 +34,7 @@ module Index
     def init_dependencies
       posting_list_storage = Index::PostingListStorage.new(data_path:)
       term_dictionary = Index::TermDictionary.new(data_path:, posting_list_storage:)
-      document_storage = Index::DocumentStorage.new(data_path:, document_id_offset: $document_id)
+      document_storage = Index::DocumentStorage.new(data_path:)
 
       [term_dictionary, document_storage]
     end

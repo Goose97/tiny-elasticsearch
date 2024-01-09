@@ -3,11 +3,15 @@
 require 'json'
 
 module Index
+  # DocumentStorage is responsible for storing documents
+  # It consists of two files:
+  # - documents - stores the documents
+  # - documents_index - stores the offset of the documents in the documents file. It stores pairs
+  # of document_id and offset
   class DocumentStorage
-    def initialize(data_path:, document_id_offset:)
+    def initialize(data_path:)
       @path = "#{data_path}/documents"
       @index_path = "#{data_path}/documents_index"
-      @document_id_offset = document_id_offset
       @offset = 0
 
       open_file_handler
@@ -24,15 +28,14 @@ module Index
       @file_handler.flush
 
       # Store the offset of the document in the index file
-      @index_file_handler.seek(segment_document_id(document_id) * 8)
-      @index_file_handler << [@offset].pack('Q>')
+      @index_file_handler << [document_id, @offset].pack('Q>*')
 
       @offset += payload.length + 8
     end
 
     def get_document(document_id)
-      @index_file_handler.seek(segment_document_id(document_id) * 8)
-      offset = @index_file_handler.read(8).unpack1('Q>')
+      _, offset = binary_search(document_id)
+      raise 'Document not found' if offset.nil?
 
       @file_handler.seek(offset)
       payload_length = @file_handler.read(8).unpack1('Q>')
@@ -57,14 +60,38 @@ module Index
     def open_index_file_handler
       File.new(@index_path, 'w') unless File.exist?(@index_path)
 
-      fd = IO.sysopen(@index_path, 'r+b')
+      fd = IO.sysopen(@index_path, 'a+b')
       io = IO.new(fd)
 
       @index_file_handler = io
     end
 
-    def segment_document_id(document_id)
-      document_id - @document_id_offset
+    def total_documents
+      @total_documents ||= File.size(@index_path) / 16
+    end
+
+    def binary_search(document_id)
+      lo = 0
+      hi = total_documents - 1
+
+      while lo <= hi
+        mid = lo + (hi - lo) / 2
+        mid_value, mid_offset = get_by_index(mid)
+
+        if mid_value == document_id
+          return mid, mid_offset
+        elsif mid_value < document_id
+          lo = mid + 1
+        else
+          hi = mid - 1
+        end
+      end
+    end
+
+    def get_by_index(index)
+      @index_file_handler.seek(index * 16)
+
+      @index_file_handler.read(16).unpack('Q>Q>')
     end
   end
 end
