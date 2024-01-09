@@ -4,9 +4,10 @@ require 'json'
 
 module Index
   class DocumentStorage
-    def initialize(data_path:)
+    def initialize(data_path:, document_id_offset:)
       @path = "#{data_path}/documents"
       @index_path = "#{data_path}/documents_index"
+      @document_id_offset = document_id_offset
       @offset = 0
 
       open_file_handler
@@ -23,14 +24,14 @@ module Index
       @file_handler.flush
 
       # Store the offset of the document in the index file
-      @index_file_handler.seek(document_id * 8)
+      @index_file_handler.seek(segment_document_id(document_id) * 8)
       @index_file_handler << [@offset].pack('Q>')
 
       @offset += payload.length + 8
     end
 
     def get_document(document_id)
-      @index_file_handler.seek(document_id * 8)
+      @index_file_handler.seek(segment_document_id(document_id) * 8)
       offset = @index_file_handler.read(8).unpack1('Q>')
 
       @file_handler.seek(offset)
@@ -45,6 +46,8 @@ module Index
     attr_reader :path, :offset, :file_handler, :index_file_handler
 
     def open_file_handler
+      FileUtils.mkdir_p(File.dirname(@path))
+
       fd = IO.sysopen(@path, 'a+b')
       io = IO.new(fd)
 
@@ -58,6 +61,10 @@ module Index
       io = IO.new(fd)
 
       @index_file_handler = io
+    end
+
+    def segment_document_id(document_id)
+      document_id - @document_id_offset
     end
   end
 end
