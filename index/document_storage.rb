@@ -59,7 +59,7 @@ module Index
     end
 
     def into_iterator
-      Index::DocumentStorageIterator.new(self)
+      Iterator.new(self)
     end
 
     def get_document_by_index(index)
