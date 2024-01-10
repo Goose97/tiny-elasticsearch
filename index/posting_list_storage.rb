@@ -2,8 +2,12 @@
 
 module Index
   class PostingListStorage
+    def self.posting_list_file(data_path:)
+      "#{data_path}/posting_list"
+    end
+
     def initialize(data_path:)
-      @path = "#{data_path}/posting_list"
+      @path = PostingListStorage.posting_list_file(data_path:)
       @offset = 0
 
       open_file_handler
@@ -11,7 +15,10 @@ module Index
 
     def get_posting_list(offset)
       @file_handler.seek(offset)
-      payload_length = @file_handler.read(8).unpack1('Q>')
+      byte = @file_handler.read(8)
+      raise 'Invalid offset' unless byte
+
+      payload_length = byte.unpack1('Q>')
       @file_handler.read(payload_length).unpack('Q>*')
     end
 
