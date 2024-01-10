@@ -2,8 +2,12 @@
 
 module Index
   class TermDictionary
+    def self.term_dictionary_file(data_path:)
+      "#{data_path}/term_dictionary"
+    end
+
     def initialize(data_path:, posting_list_storage:)
-      @path = "#{data_path}/term_dictionary"
+      @path = TermDictionary.term_dictionary_file(data_path:)
 
       # Map term to posting list offset
       @dictionary = {}
@@ -25,14 +29,26 @@ module Index
 
       @dictionary_mutex.synchronize do
         @dictionary.each do |term, posting_list_offset|
+          fd << [term.length].pack('C')
           fd << term
-          fd << ' '
           fd << [posting_list_offset].pack('Q>')
-          fd << "\n"
         end
       end
 
       fd.flush
+    end
+
+    def each
+      @dictionary.each do |term, posting_list_offset|
+        yield [term, posting_list_offset]
+      end
+    end
+
+    def get_posting_list(term)
+      offset = @dictionary[term]
+      return unless offset
+
+      @posting_list_storage.get_posting_list(offset)
     end
 
     private
@@ -47,9 +63,13 @@ module Index
 
     def load_from_data_file
       File.open(@path, 'rb') do |f|
-        f.each_line do |line|
-          term, posting_list = line.split(' ')
-          posting_list_offset = posting_list.unpack1('Q>')
+        loop do
+          byte = f.read(1)
+          break unless byte
+
+          term_length = byte.unpack1('C')
+          term = f.read(term_length)
+          posting_list_offset = f.read(8).unpack1('Q>')
 
           @dictionary[term] = posting_list_offset
         end
