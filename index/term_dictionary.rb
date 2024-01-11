@@ -1,12 +1,16 @@
 # frozen_string_literal: true
 
+require_relative './term_dictionary_iterator'
+
 module Index
   class TermDictionary
     def self.term_dictionary_file(data_path:)
       "#{data_path}/term_dictionary"
     end
 
-    def initialize(data_path:, posting_list_storage:)
+    attr_reader :path, :posting_list_storage
+
+    def initialize(data_path:, posting_list_storage:, load_from_disk: true)
       @path = TermDictionary.term_dictionary_file(data_path:)
 
       # Map term to posting list offset
@@ -15,7 +19,7 @@ module Index
 
       @posting_list_storage = posting_list_storage
 
-      init_data_file
+      init_data_file if load_from_disk
     end
 
     def add_terms(terms, document_id)
@@ -52,9 +56,13 @@ module Index
       @posting_list_storage.get_posting_list(offset)
     end
 
+    def into_iterator
+      Iterator.new(self)
+    end
+
     private
 
-    attr_reader :path, :dictionary, :file_handler
+    attr_reader :dictionary, :file_handler
 
     def init_data_file
       return load_from_data_file if File.exist?(@path)
