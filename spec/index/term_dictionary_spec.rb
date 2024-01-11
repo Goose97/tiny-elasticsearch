@@ -57,6 +57,32 @@ describe Index::TermDictionary do
 
         FileUtils.rm_rf('tmp')
       end
+
+      it 'keeps the terms sorted alphabetically' do
+        reset_tmp_folder
+        posting_list_storage = Index::PostingListStorage.new(data_path: 'tmp/term_dictionary_test')
+        term_dictionary = described_class.new(data_path: 'tmp/term_dictionary_test',
+                                              posting_list_storage:)
+
+        term_dictionary.add_terms(%w[f h w], 0)
+        term_dictionary.add_terms(%w[b a m], 1)
+        term_dictionary.persist
+
+        # Load the dictionary from disk
+        new_term_dictionary = described_class.new(data_path: 'tmp/term_dictionary_test',
+                                                  posting_list_storage:)
+        terms = []
+
+        # rubocop:disable Style/HashEachMethods
+        new_term_dictionary.each do |term, _|
+          terms << term
+        end
+        # rubocop:enable Style/HashEachMethods
+
+        expect(terms).to eq(%w[a b f h m w])
+
+        FileUtils.rm_rf('tmp')
+      end
     end
   end
 

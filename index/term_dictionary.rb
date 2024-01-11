@@ -28,7 +28,7 @@ module Index
       fd = open_file_handler
 
       @dictionary_mutex.synchronize do
-        @dictionary.each do |term, posting_list_offset|
+        @dictionary.sort.each do |term, posting_list_offset|
           fd << [term.length].pack('C')
           fd << term
           fd << [posting_list_offset].pack('Q>')
@@ -36,6 +36,7 @@ module Index
       end
 
       fd.flush
+      fd.close
     end
 
     def each
