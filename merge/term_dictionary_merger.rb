@@ -98,7 +98,8 @@ module Merge
       def term_dictionary_iterator(segment)
         posting_list_storage = Index::PostingListStorage.new(data_path: "#{@data_path}/segment_#{segment}")
         term_dictionary = Index::TermDictionary.new(data_path: "#{@data_path}/segment_#{segment}",
-                                                    posting_list_storage:)
+                                                    posting_list_storage:,
+                                                    load_from_disk: false)
 
         term_dictionary.into_iterator
       end
