@@ -26,6 +26,8 @@ module Merge
                                segment_a: @segment_a,
                                segment_b: @segment_b,
                                new_segment: @new_segment).call
+      FileUtils.rm_rf("#{@data_path}/segment_#{@segment_a}")
+      FileUtils.rm_rf("#{@data_path}/segment_#{@segment_b}")
     end
   end
 end
