@@ -27,12 +27,12 @@ module Index
       payload = list.pack('Q>*')
 
       # Prefix with the payload length - 8 bytes
-      @file_handler << [payload.length].pack('Q>')
+      @file_handler << [payload.bytesize].pack('Q>')
       @file_handler << payload
       @file_handler.flush
 
       offset = @offset
-      @offset += payload.length + 8
+      @offset += payload.bytesize + 8
 
       offset
     end

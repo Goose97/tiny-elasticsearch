@@ -77,7 +77,7 @@ module Merge
       def write_term_posting_list(fd, term, posting_list, posting_list_storage)
         # TODO: encapsulate this logic inside term dictionary
         offset = posting_list_storage.add_posting_list(posting_list)
-        fd << [term.length].pack('C')
+        fd << [term.bytesize].pack('C')
         fd << term
         fd << [offset].pack('Q>')
       end

@@ -33,7 +33,7 @@ module Index
 
       @dictionary_mutex.synchronize do
         @dictionary.sort.each do |term, posting_list_offset|
-          fd << [term.length].pack('C')
+          fd << [term.bytesize].pack('C')
           fd << term
           fd << [posting_list_offset].pack('Q>')
         end

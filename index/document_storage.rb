@@ -32,7 +32,7 @@ module Index
       payload = JSON.generate(document)
 
       # Prefix with the payload length - 8 bytes
-      @file_handler << [payload.length].pack('Q>')
+      @file_handler << [payload.bytesize].pack('Q>')
       @file_handler << payload
       @file_handler.flush
 
@@ -40,7 +40,7 @@ module Index
       @index_file_handler << [document_id, @offset].pack('Q>*')
       @index_file_handler.flush
 
-      @offset += payload.length + 8
+      @offset += payload.bytesize + 8
     end
 
     def get_document(document_id)
