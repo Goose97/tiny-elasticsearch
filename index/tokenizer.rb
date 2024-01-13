@@ -3,9 +3,15 @@
 module Index
   class Tokenizer
     def tokenize(text)
-      text.split(/\s+/)
-          .map { _1.gsub(/\W/, '').downcase }
-          .filter { !_1.empty? && _1.bytesize < 256 }
+      tokens = Set.new
+
+      text.scan(/\w{1,255}/).each do |word|
+        token = word.downcase
+        next if tokens.include?(token)
+
+        tokens << token
+        yield token
+      end
     end
   end
 end

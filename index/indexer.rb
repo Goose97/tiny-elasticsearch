@@ -63,16 +63,15 @@ module Index
       end
 
       term_dictionary.persist
+
+      @buffer = []
     end
 
     def group_tokens(documents)
       token_hash = {}
 
       documents.each do |document, document_id|
-        tokens = @tokenizer.tokenize(document[:text])
-        tokens.uniq!
-
-        tokens.each do |token|
+        @tokenizer.tokenize(document[:text]) do |token|
           token_hash[token] ||= []
           token_hash[token] << document_id
         end
