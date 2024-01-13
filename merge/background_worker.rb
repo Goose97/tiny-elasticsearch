@@ -2,6 +2,7 @@
 
 require 'pathname'
 require_relative '../index/segment_counter'
+require_relative './segment_merger'
 
 module Merge
   class BackgroundWorker
