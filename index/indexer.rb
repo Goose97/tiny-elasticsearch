@@ -3,32 +3,28 @@
 require 'fileutils'
 require_relative './segment_counter'
 require_relative '../merge/background_worker'
+require_relative './posting_list_storage'
+require_relative './document_storage'
+require_relative './term_dictionary'
 
 $document_id = -1
 
 module Index
   class Indexer
-    DATA_PATH = '.data'
-    DICTIONARY_PATH = "#{DATA_PATH}/term_dictionary".freeze
-
-    def initialize(tokenizer:)
+    def initialize(tokenizer:, data_path:, buffer_size:)
       @tokenizer = tokenizer
+      @root_data_path = data_path
+      @buffer = []
+      @buffer_size = buffer_size
       @merge_worker = Thread.new do
-        Merge::BackgroundWorker.new(data_path: DATA_PATH).call
+        Merge::BackgroundWorker.new(data_path:).call
       end
     end
 
     def add_document(document)
-      $document_id += 1
-      segment_id = Index::SegmentCounter.instance.next_segment
+      @buffer << document
 
-      tokens = @tokenizer.tokenize(document[:text])
-      tokens.uniq!
-
-      term_dictionary, document_storage = init_dependencies(segment_id)
-      term_dictionary.add_terms(tokens, $document_id)
-      term_dictionary.persist
-      document_storage.add_document(document, $document_id)
+      flush_buffer if @buffer.size >= @buffer_size
     end
 
     def shutdown
@@ -37,7 +33,7 @@ module Index
 
     private
 
-    attr_reader :tokenizer, :thread
+    attr_reader :tokenizer, :root_data_path, :thread, :buffer, :buffer_size
 
     def init_dependencies(segment_id)
       data_path = data_path(segment_id)
@@ -49,7 +45,48 @@ module Index
     end
 
     def data_path(segment_id)
-      "#{DATA_PATH}/segment_#{segment_id}"
+      "#{@root_data_path}/segment_#{segment_id}"
+    end
+
+    def flush_buffer
+      segment_id = Index::SegmentCounter.instance.next_segment
+
+      documents = assign_document_id(@buffer)
+      group_by_token = group_tokens(documents)
+
+      term_dictionary, document_storage = init_dependencies(segment_id)
+
+      term_dictionary.add_raw_entries(group_by_token.to_a)
+
+      documents.each do |document, document_id|
+        document_storage.add_document(document, document_id)
+      end
+
+      term_dictionary.persist
+    end
+
+    def group_tokens(documents)
+      token_hash = {}
+
+      documents.each do |document, document_id|
+        tokens = @tokenizer.tokenize(document[:text])
+        tokens.uniq!
+
+        tokens.each do |token|
+          token_hash[token] ||= []
+          token_hash[token] << document_id
+        end
+      end
+
+      token_hash
+    end
+
+    def assign_document_id(documents)
+      documents.map do |document|
+        $document_id += 1
+
+        [document, $document_id]
+      end
     end
   end
 end

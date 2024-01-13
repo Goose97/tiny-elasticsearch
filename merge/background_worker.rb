@@ -16,10 +16,10 @@ module Merge
         next unless mergeable_segments.size >= SEGMENT_MERGE_THRESHOLD
 
         # Merge two oldest segments
-        SegmentMerger.new(data_path: @data_path,
-                          segment_a: mergeable_segments[0],
-                          segment_b: mergeable_segments[1],
-                          new_segment: Index::SegmentCounter.instance.next_segment).call
+        Merge::SegmentMerger.new(data_path: @data_path,
+                                 segment_a: mergeable_segments[0],
+                                 segment_b: mergeable_segments[1],
+                                 new_segment: Index::SegmentCounter.instance.next_segment).call
       end
     end
 

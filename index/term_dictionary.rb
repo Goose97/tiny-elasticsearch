@@ -28,6 +28,15 @@ module Index
       end
     end
 
+    # Add a list of term and posting list pairs
+    # Used for bulk indexing
+    def add_raw_entries(entries)
+      entries.each do |term, posting_list|
+        offset = @posting_list_storage.add_posting_list(posting_list)
+        @dictionary[term] = offset
+      end
+    end
+
     def persist
       fd = open_file_handler
 
