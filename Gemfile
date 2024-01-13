@@ -9,3 +9,5 @@ gem 'nokogiri', '~> 1.16'
 gem "rspec", "~> 3.12"
 
 gem "solargraph", "~> 0.50.0"
+
+gem "sqlite3", "~> 1.7"

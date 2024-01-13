@@ -1,4 +1,5 @@
 .data
-benchmark
+benchmark_result
+benchmark/wiki.db
 wikipedia.xml
 .ruby-version
