@@ -11,3 +11,5 @@ gem "rspec", "~> 3.12"
 gem "solargraph", "~> 0.50.0"
 
 gem "sqlite3", "~> 1.7"
+
+gem "get_process_mem", "~> 0.2.7"
