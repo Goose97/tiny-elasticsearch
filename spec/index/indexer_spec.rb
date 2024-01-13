@@ -13,7 +13,7 @@ describe Index::Indexer do
         indexer = Index::Indexer.new(data_path: 'tmp/indexer_test', tokenizer:, buffer_size: 3)
 
         indexer.add_document({ text: 'Postgres is a SQL database', title: 'Postgres' })
-        indexer.add_document({ text: 'Lucene is a search database', title: 'Postgres' })
+        indexer.add_document({ text: 'Lucene is a search database', title: 'Lucene' })
         indexer.add_document({ text: 'Postgres and Lucene are both databases', title: 'Databases' })
 
         posting_list_storage = Index::PostingListStorage.new(data_path: 'tmp/indexer_test/segment_0')
